@@ -1,4 +1,4 @@
-package com.example.twitter;
+package com.example.twitter.models;
 
 import twitter4j.Query;
 import twitter4j.QueryResult;

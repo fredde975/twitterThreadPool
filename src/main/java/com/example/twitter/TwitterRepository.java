@@ -1,6 +1,7 @@
 package com.example.twitter;
 
 import com.example.twitter.exceptions.TimeExceededException;
+import com.example.twitter.models.TwitterRequest;
 import com.example.twitter.models.WordItem;
 import org.apache.log4j.Logger;
 import org.springframework.context.ApplicationContext;
@@ -12,7 +13,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
-import java.util.stream.IntStream;
 
 @Component
 public class TwitterRepository {
@@ -78,7 +78,7 @@ public class TwitterRepository {
         try {
             r = queryResult.get(1, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new TimeExceededException(e.getMessage());
+            throw new TimeExceededException("No response from Twitter in less than 1 second");
         }
         return r;
     }
