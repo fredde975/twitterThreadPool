@@ -18,6 +18,8 @@ public class TwitterRequest implements Callable<QueryResult> {
 
     @Override
     public QueryResult call() throws Exception {
+        String threadName = Thread.currentThread().getName();
+        System.out.println("Thread name: " + threadName);
         QueryResult result = twitter.search(query);
         return result;
     }

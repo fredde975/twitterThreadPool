@@ -11,11 +11,14 @@ import org.springframework.web.bind.annotation.*;
 import twitter4j.TwitterException;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 public class TwitterController {
     @Autowired
     private TwitterService twitterService;
+
     private static final org.apache.log4j.Logger LOG = Logger.getLogger(TwitterController.class);
 
     @RequestMapping(value = "sortedTweets", method = RequestMethod.GET)
@@ -25,6 +28,15 @@ public class TwitterController {
 
         return words;
     }
+
+    @RequestMapping(value = "tweets", method = RequestMethod.GET)
+    public List<WordItem> getTweets() throws TagInputException, TwitterException, TimeoutException, InterruptedException, ExecutionException {
+        String tag = "bieber";
+        String hashTag = createHashtagFromQueryString(tag);
+        List<WordItem> words = twitterService.getTweets(hashTag);
+        return words;
+    }
+
 
     private String createHashtagFromQueryString(String tag) throws TagInputException {
         if (tag != null && tag.length() > 0 && !tag.startsWith("#")) {
