@@ -1,5 +1,9 @@
-import com.example.twitter.models.WordItem;
+import com.example.twitter.TwitterRequest;
+import com.example.twitter.TwitterService;
 import org.junit.Test;
+import twitter4j.Query;
+import twitter4j.QueryResult;
+import twitter4j.Twitter;
 
 import java.util.concurrent.*;
 
@@ -82,6 +86,34 @@ public class TreadPoolTest {
 
     @Test
     public void pool4(){
+        Twitter twitter = TwitterService.createTwitterInstance();
+        Query query1 = TwitterService.createQuery("#bieber");
+        Query query2 = TwitterService.createQuery("#sweden");
+        Query query3 = TwitterService.createQuery("#elin");
 
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+
+        Future<QueryResult> result1 = pool.submit(new TwitterRequest(query1, twitter));
+        Future<QueryResult> result2 = pool.submit(new TwitterRequest(query2, twitter));
+        Future<QueryResult> result3 = pool.submit(new TwitterRequest(query2, twitter));
+
+
+        try {
+            QueryResult qr1 = result1.get();
+            System.out.println(qr1.getTweets());
+
+
+            QueryResult qr2 = result2.get();
+            System.out.println(qr2.getTweets());
+
+            QueryResult qr3 = result3.get();
+            System.out.println(qr3.getTweets());
+
+        } catch (InterruptedException | ExecutionException ex) {
+            ex.printStackTrace();
+        }
+
+        pool.shutdown();
     }
+
 }
