@@ -1,6 +1,7 @@
 package com.example.twitter;
 
 import com.example.twitter.exceptions.TagInputException;
+import com.example.twitter.exceptions.TimeExceededException;
 import com.example.twitter.models.ErrorResponse;
 import com.example.twitter.models.WordItem;
 import org.apache.log4j.Logger;
@@ -22,20 +23,13 @@ public class TwitterController {
     private static final org.apache.log4j.Logger LOG = Logger.getLogger(TwitterController.class);
 
     @RequestMapping(value = "sortedTweets", method = RequestMethod.GET)
-    public List<WordItem> getTwitterTag(@RequestParam("tag") String tag) throws TagInputException, TwitterException {
+    public List<WordItem> getTwitterTag(@RequestParam("tag") String tag) throws TagInputException, TwitterException, TimeExceededException {
         String hashTag = createHashtagFromQueryString(tag);
         List<WordItem> words = twitterService.handleRequest(hashTag);
 
         return words;
     }
 
-    @RequestMapping(value = "tweets", method = RequestMethod.GET)
-    public List<WordItem> getTweets() throws TagInputException, TwitterException, TimeoutException, InterruptedException, ExecutionException {
-        String tag = "bieber";
-        String hashTag = createHashtagFromQueryString(tag);
-        List<WordItem> words = twitterService.getTweets(hashTag);
-        return words;
-    }
 
 
     private String createHashtagFromQueryString(String tag) throws TagInputException {
@@ -57,6 +51,10 @@ public class TwitterController {
            status =  HttpStatus.UNPROCESSABLE_ENTITY;
         } else if (ex instanceof TwitterException) {
            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        } else if(ex instanceof TimeExceededException){
+            status = HttpStatus.GATEWAY_TIMEOUT;
+        }else{
+            status = HttpStatus.SERVICE_UNAVAILABLE;
         }
 
         return  new ResponseEntity<>(error, status);

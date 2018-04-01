@@ -1,5 +1,6 @@
 package com.example.twitter;
 
+import com.example.twitter.exceptions.TimeExceededException;
 import com.example.twitter.models.WordItem;
 import com.example.twitter.utils.TwitterUtil;
 import org.apache.log4j.Logger;
@@ -24,24 +25,24 @@ public class TwitterService {
     private static final String ACCESS_TOKEN_SECRET = "hNI81vC3XbSp3tpiQ4m1dywL1KbJ0W3O0LqfcDwCsMAqO";
     private static final int TWEETS_PER_QUERY = 100;
 
-    private static ApplicationContext context = null;
-    private static ExecutorService executorService;
+//    private static ApplicationContext context = null;
+//    private static ExecutorService executorService;
 
 
     @Autowired
     TwitterRepository twitterRepository;
 
-    public TwitterService() {
-        if (context == null) {
-            context = new AnnotationConfigApplicationContext(Configuration.class);
-            executorService = (ExecutorService) context.getBean("ConcurrentExecutorService");
-        }else{
-            System.out.println("context....");
-        }
-    }
+//    public TwitterService() {
+//        if (context == null) {
+//            context = new AnnotationConfigApplicationContext(Configuration.class);
+//            executorService = (ExecutorService) context.getBean("ConcurrentExecutorService");
+//        }else{
+//            System.out.println("context....");
+//        }
+//    }
 
 
-    public List<WordItem> handleRequest(String hashTag) throws TwitterException {
+    public List<WordItem> handleRequest(String hashTag) throws TwitterException, TimeExceededException {
         Twitter twitter = createTwitterInstance();
         TwitterUtil.checkLimits(twitter);
         Query queryMax = createQuery(hashTag);
@@ -51,12 +52,12 @@ public class TwitterService {
         return wordItems;
     }
 
-    public List<WordItem> getTweets(String hashTag) throws TwitterException, TimeoutException, ExecutionException, InterruptedException {
-        Future<QueryResult> result = executorService.submit( new TwitterRequest(createQuery(hashTag), createTwitterInstance()));
-        List<Status> statusList = result.get(100, TimeUnit.SECONDS).getTweets();
-
-        return statusList.stream().map(s -> new WordItem(s.getText(), 1)).collect(Collectors.toList());
-    }
+//    public List<WordItem> getTweets(String hashTag) throws TwitterException, TimeoutException, ExecutionException, InterruptedException {
+//        Future<QueryResult> result = executorService.submit( new TwitterRequest(createQuery(hashTag), createTwitterInstance()));
+//        List<Status> statusList = result.get(100, TimeUnit.SECONDS).getTweets();
+//
+//        return statusList.stream().map(s -> new WordItem(s.getText(), 1)).collect(Collectors.toList());
+//    }
 
 
     public static Twitter createTwitterInstance() {

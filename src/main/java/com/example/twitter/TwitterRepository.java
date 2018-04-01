@@ -1,29 +1,41 @@
 package com.example.twitter;
 
+import com.example.twitter.exceptions.TimeExceededException;
 import com.example.twitter.models.WordItem;
 import org.apache.log4j.Logger;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Component;
 import twitter4j.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 @Component
 public class TwitterRepository {
     private static final org.apache.log4j.Logger LOG = Logger.getLogger(TwitterRepository.class);
     private static final int MAX_QUERIES = 5;
 
-    public Map<String, WordItem> getTweets(Query query, Twitter twitter) throws TwitterException {
+    private static ApplicationContext context = null;
+    private static ExecutorService executorService;
+
+    public TwitterRepository() {
+        if (context == null) {
+            context = new AnnotationConfigApplicationContext(Configuration.class);
+            executorService = (ExecutorService) context.getBean("ConcurrentExecutorService");
+        }
+    }
+
+    public Map<String, WordItem> getTweets(Query query, Twitter twitter) throws TimeExceededException {
         Map<String, WordItem> resultMap = new HashMap<>();
         long maxID = -1;
         int totalTweets = 0;
 
         //	This is the loop that retrieve multiple blocks of tweets from Twitter
         for (int queryNumber = 0; queryNumber < MAX_QUERIES; queryNumber++) {
-
-            //does not handle rate limits
-
             //	If maxID is -1, then this is our first call and we do not want to tell Twitter what the maximum
             //	tweet id is we want to retrieve.  But if it is not -1, then it represents the lowest tweet ID
             //	we've seen, so we want to start at it-1 (if we start at maxID, we would see the lowest tweet
@@ -32,12 +44,7 @@ public class TwitterRepository {
                 query.setMaxId(maxID - 1);
             }
 
-            //	This actually does the search on Twitter and makes the call across the network
-            QueryResult r = twitter.search(query);
-
-            //	If there are NO tweets in the result set, it is Twitter's way of telling us that there are no
-            //	more tweets to be retrieved.  Remember that Twitter's search index only contains about a week's
-            //	worth of tweets, and uncommon search terms can run out of week before they run out of tweets
+            QueryResult r = getQueryResult(query, twitter);
             if (r.getTweets().size() == 0) {
                 break;            // Nothing? We must be done
             }
@@ -46,8 +53,7 @@ public class TwitterRepository {
             //	loop through all the tweets and process them.  In this sample program, we just print them
             //	out, but in a real application you might save them to a database, a CSV file, do some
             //	analysis on them, whatever...
-            for (Status s : r.getTweets())                // Loop through all the tweets...
-            {
+            for (Status s : r.getTweets()){
                 //	Increment our TWEETS_PER_QUERY of tweets retrieved
                 totalTweets++;
 
@@ -64,6 +70,17 @@ public class TwitterRepository {
 
         LOG.info(String.format("\n\nA total of %d tweets retrieved\n", totalTweets));
         return resultMap;
+    }
+
+    private QueryResult getQueryResult(Query query, Twitter twitter) throws TimeExceededException {
+        Future<QueryResult> queryResult = executorService.submit(new TwitterRequest(query, twitter));
+        QueryResult r = null;
+        try {
+            r = queryResult.get(1, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new TimeExceededException(e.getMessage());
+        }
+        return r;
     }
 
     private void handleTweetText(Status status, Map<String, WordItem> resultMap) {
